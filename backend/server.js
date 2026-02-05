@@ -67,6 +67,13 @@ app.use(
   })
 );
 
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none"
+});
+
+
 
 const PORT = process.env.PORT || 5000;
 
