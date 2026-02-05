@@ -60,6 +60,14 @@ app.use((err, req, res, next) => {
   });
 });
 
+app.use(
+  cors({
+    origin: "https://your-frontend.vercel.app",
+    credentials: true
+  })
+);
+
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
