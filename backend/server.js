@@ -11,10 +11,23 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Socket.io Setup
+// ===== Middleware =====
+app.use(express.json());
+app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: [
+      "https://your-frontend.vercel.app" // ✅ Vercel frontend URL
+    ],
+    credentials: true
+  })
+);
+
+// ===== Socket.io Setup =====
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    origin: "https://your-frontend.vercel.app",
     credentials: true
   }
 });
@@ -27,29 +40,21 @@ io.on('connection', (socket) => {
   });
 });
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:4173'],
-  credentials: true
-}));
-
-// Make io accessible to our router
+// Make io available in routes
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// Database Connection
+// ===== Database =====
 connectDB();
 
-// Routes
+// ===== Routes =====
 app.use('/auth', require('./routes/authRoutes'));
 app.use('/api/firs', require('./routes/firRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
-// Error Handling Middleware
+// ===== Error Handler =====
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -60,23 +65,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use(
-  cors({
-    origin: "https://your-frontend.vercel.app",
-    credentials: true
-  })
-);
-
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "none"
-});
-
-
-
+// ===== Start Server =====
 const PORT = process.env.PORT || 5000;
-
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
