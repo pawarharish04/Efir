@@ -6,6 +6,7 @@ import { useSocket } from '../context/SocketContext';
 import { toast } from 'react-hot-toast';
 import StatusTimeline from './StatusTimeline';
 import { generateFIRPDF } from '../utils/pdfGenerator';
+import { API_URL } from '../config';
 
 const FIRList = () => {
     const [firs, setFirs] = useState([]);
@@ -18,7 +19,7 @@ const FIRList = () => {
     useEffect(() => {
         const fetchFIRs = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/firs/my-firs', {
+                const res = await axios.get(`${API_URL}/api/firs/my-firs`, {
                     withCredentials: true,
                 });
                 setFirs(res.data.firs);
@@ -87,7 +88,7 @@ const FIRList = () => {
 
     const handleAddMessage = async (id, message) => {
         try {
-            const res = await axios.post(`http://localhost:5000/api/firs/update/${id}/message`, { message }, {
+            const res = await axios.post(`${API_URL}/api/firs/update/${id}/message`, { message }, {
                 withCredentials: true
             });
 

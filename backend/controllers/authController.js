@@ -72,6 +72,7 @@ const login = async (req, res, next) => {
             .status(200)
             .json({
                 success: true,
+                token, // Return token for mobile/client-side storage
                 user: {
                     _id: user._id,
                     name: user.name,

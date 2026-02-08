@@ -11,6 +11,16 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+// Allowed origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://localhost:5000',
+  'http://10.0.2.2:5000',
+  'http://localhost', // Android emulator default
+  'capacitor://localhost', // iOS/Android wrapped app
+];
+
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(cookieParser());
@@ -25,9 +35,9 @@ app.use(
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
   cors: {
-    origin: "https://your-frontend.vercel.app",
-    credentials: true,
-  },
+    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    credentials: true
+  }
 });
 
 io.on("connection", (socket) => {
@@ -38,7 +48,15 @@ io.on("connection", (socket) => {
   });
 });
 
-// Make io available in controllers
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:4173'],
+  credentials: true
+}));
+
+// Make io accessible to our router
 app.use((req, res, next) => {
   req.io = io;
   next();

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">E-FIR Portal</string>
+    <string name="title_activity_main">E-FIR Portal</string>
+    <string name="package_name">com.efir.app</string>
+    <string name="custom_url_scheme">com.efir.app</string>
+</resources>

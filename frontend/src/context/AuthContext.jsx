@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { API_URL } from '../config';
 
 const AuthContext = createContext();
 
@@ -10,9 +11,19 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+
+
     const api = axios.create({
-        baseURL: 'http://localhost:5000',
+        baseURL: API_URL,
         withCredentials: true,
+    });
+
+    api.interceptors.request.use((config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
     });
 
     useEffect(() => {
@@ -41,6 +52,9 @@ export const AuthProvider = ({ children }) => {
             const res = await api.post('/auth/login', payload);
             setUser(res.data.user);
             localStorage.setItem('user', JSON.stringify(res.data.user));
+            if (res.data.token) {
+                localStorage.setItem('token', res.data.token);
+            }
             toast.success('Logged in successfully');
             return res.data.user;
         } catch (error) {
@@ -64,6 +78,7 @@ export const AuthProvider = ({ children }) => {
             await api.post('/auth/logout');
             setUser(null);
             localStorage.removeItem('user');
+            localStorage.removeItem('token');
             toast.success('Logged out');
         } catch (error) {
             console.error(error);

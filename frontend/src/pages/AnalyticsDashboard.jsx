@@ -16,6 +16,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Activity, CheckCircle, Clock, XCircle, AlertTriangle, MapPin, BarChart3, PieChart } from 'lucide-react';
+import { API_URL } from '../config';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -44,7 +45,7 @@ const AnalyticsDashboard = () => {
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/firs/analytics', {
+                const res = await axios.get(`${API_URL}/api/firs/analytics`, {
                     withCredentials: true,
                 });
                 setData(res.data.stats);

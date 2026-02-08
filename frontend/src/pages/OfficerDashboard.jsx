@@ -5,6 +5,7 @@ import { Search, Filter, BarChart2, RefreshCw, Check, X, Clock, AlertTriangle, C
 import { Link } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../config';
 
 const OfficerDashboard = () => {
     const [firs, setFirs] = useState([]);
@@ -27,7 +28,7 @@ const OfficerDashboard = () => {
             if (filters.type) params.append('type', filters.type);
             if (filters.status) params.append('status', filters.status);
 
-            const res = await axios.get(`http://localhost:5000/api/firs/all?${params.toString()}`, {
+            const res = await axios.get(`${API_URL}/api/firs/all?${params.toString()}`, {
                 withCredentials: true,
             });
             setFirs(res.data.firs);
@@ -65,7 +66,7 @@ const OfficerDashboard = () => {
     const handleStatusUpdate = async (id, newStatus, e) => {
         e?.stopPropagation(); // Prevent row toggle
         try {
-            await axios.put(`http://localhost:5000/api/firs/update/${id}`, { status: newStatus }, {
+            await axios.put(`${API_URL}/api/firs/update/${id}`, { status: newStatus }, {
                 withCredentials: true,
             });
             // Update happens via socket, but optimistic update is good practice
@@ -77,7 +78,7 @@ const OfficerDashboard = () => {
 
     const handleAddLog = async (id, entry) => {
         try {
-            const res = await axios.post(`http://localhost:5000/api/firs/update/${id}/log`, { entry }, {
+            const res = await axios.post(`${API_URL}/api/firs/update/${id}/log`, { entry }, {
                 withCredentials: true
             });
 
@@ -100,7 +101,7 @@ const OfficerDashboard = () => {
 
     const handleAddMessage = async (id, message) => {
         try {
-            const res = await axios.post(`http://localhost:5000/api/firs/update/${id}/message`, { message }, {
+            const res = await axios.post(`${API_URL}/api/firs/update/${id}/message`, { message }, {
                 withCredentials: true
             });
 
@@ -370,14 +371,14 @@ const OfficerDashboard = () => {
                                                                                     {fir.evidence.map((path, idx) => (
                                                                                         <a
                                                                                             key={idx}
-                                                                                            href={`http://localhost:5000/${path.replace(/\\/g, '/')}`}
+                                                                                            href={`${API_URL}/${path.replace(/\\/g, '/')}`}
                                                                                             target="_blank"
                                                                                             rel="noreferrer"
                                                                                             className="block w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:ring-2 ring-blue-500 transition-all relative group bg-gray-100 dark:bg-gray-700"
                                                                                         >
                                                                                             {path.match(/\.(jpg|jpeg|png|gif)$/i) ? (
                                                                                                 <img
-                                                                                                    src={`http://localhost:5000/${path.replace(/\\/g, '/')}`}
+                                                                                                    src={`${API_URL}/${path.replace(/\\/g, '/')}`}
                                                                                                     alt="Evidence"
                                                                                                     className="w-full h-full object-cover"
                                                                                                 />
