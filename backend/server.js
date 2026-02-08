@@ -17,7 +17,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://your-frontend.vercel.app", // replace later
+    origin: "https://efir-gamma.vercel.app/", // replace later
     credentials: true,
   })
 );
