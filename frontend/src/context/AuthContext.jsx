@@ -13,6 +13,8 @@ export const AuthProvider = ({ children }) => {
         baseURL: import.meta.env.VITE_API_URL,
         withCredentials: true,
     });
+    console.log("API URL:", import.meta.env.VITE_API_URL);
+
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');

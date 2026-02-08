@@ -2,28 +2,29 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
 const SocketContext = createContext();
-
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-    const [socket, setSocket] = useState(null);
+  const [socket, setSocket] = useState(null);
 
-    useEffect(() => {
-        const socketInstance = io(import.meta.env.VITE_API_URL, {
-            withCredentials: true,
-            transports: ["websocket"],
-        });
+  useEffect(() => {
+    const backendURL = import.meta.env.VITE_API_URL;
 
-        setSocket(socketInstance);
+    console.log("Socket connecting to:", backendURL);
 
-        return () => {
-            socketInstance.disconnect();
-        };
-    }, []);
+    const socketInstance = io(backendURL, {
+      withCredentials: true,
+      transports: ["websocket"],
+    });
 
-    return (
-        <SocketContext.Provider value={socket}>
-            {children}
-        </SocketContext.Provider>
-    );
+    setSocket(socketInstance);
+
+    return () => socketInstance.disconnect();
+  }, []);
+
+  return (
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
+  );
 };
