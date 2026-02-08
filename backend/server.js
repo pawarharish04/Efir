@@ -17,17 +17,17 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://your-frontend.vercel.app", // 🔁 replace with real Vercel URL
-    credentials: true
+    origin: "https://your-frontend.vercel.app", // replace later
+    credentials: true,
   })
 );
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
   cors: {
-    origin: "https://your-frontend.vercel.app", // same as frontend
-    credentials: true
-  }
+    origin: "https://your-frontend.vercel.app",
+    credentials: true,
+  },
 });
 
 io.on("connection", (socket) => {
@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// Make io accessible in controllers
+// Make io available in controllers
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -56,7 +56,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use((err, req, res, next) => {
   res.status(err.statusCode || 500).json({
     success: false,
-    message: err.message || "Internal Server Error"
+    message: err.message || "Internal Server Error",
   });
 });
 
