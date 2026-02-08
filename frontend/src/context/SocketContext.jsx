@@ -1,29 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { createContext, useContext } from "react";
 
-const SocketContext = createContext();
+const SocketContext = createContext(null);
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-  const [socket, setSocket] = useState(null);
-
-  useEffect(() => {
-    const backendURL = import.meta.env.VITE_API_URL;
-
-    console.log("Socket connecting to:", backendURL);
-
-    const socketInstance = io(backendURL, {
-      withCredentials: true,
-      transports: ["websocket"],
-    });
-
-    setSocket(socketInstance);
-
-    return () => socketInstance.disconnect();
-  }, []);
-
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={null}>
       {children}
     </SocketContext.Provider>
   );
