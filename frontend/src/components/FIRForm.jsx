@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { Send, Camera, Paperclip } from 'lucide-react';
 import LocationPicker from './LocationPicker';
-import { API_URL } from '../config';
+
 
 const FIRForm = ({ onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -55,8 +55,7 @@ const FIRForm = ({ onSuccess }) => {
                 data.append('evidence', file);
             });
 
-            await axios.post(`${API_URL}/api/firs/create`, data, {
-                withCredentials: true,
+            await api.post(`/api/firs/create`, data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
