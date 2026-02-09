@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Camera, AlertTriangle, Send, Shield } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { API_URL } from '../config';
+
 
 const AnonymousFIR = () => {
     const [formData, setFormData] = useState({
@@ -39,7 +39,7 @@ const AnonymousFIR = () => {
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             files.forEach(file => data.append('evidence', file));
 
-            const res = await axios.post(`${API_URL}/api/firs/anonymous/create`, data, {
+            const res = await api.post('/api/firs/anonymous/create', data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 

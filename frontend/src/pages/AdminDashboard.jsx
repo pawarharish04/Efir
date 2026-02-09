@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { Shield, UserCheck, Users, AlertTriangle, Trash2, Check, X } from 'lucide-react';
-import { API_URL } from '../config';
+
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ citizens: 0, officers: 0, pendingOfficers: 0, firs: 0 });
@@ -11,9 +11,10 @@ const AdminDashboard = () => {
 
     const fetchData = async () => {
         try {
+
             const [statsRes, officersRes] = await Promise.all([
-                axios.get(`${API_URL}/api/admin/stats`, { withCredentials: true }),
-                axios.get(`${API_URL}/api/admin/officers`, { withCredentials: true })
+                api.get('/api/admin/stats'),
+                api.get('/api/admin/officers')
             ]);
             setStats(statsRes.data.stats);
             setOfficers(officersRes.data.officers);
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
 
     const handleApproveOfficer = async (id) => {
         try {
-            await axios.put(`${API_URL}/api/admin/approve-officer/${id}`, {}, { withCredentials: true });
+            await api.put(`/api/admin/approve-officer/${id}`);
             toast.success('Officer Approved');
             fetchData(); // Refresh list
         } catch (error) {
@@ -41,7 +42,7 @@ const AdminDashboard = () => {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
-            await axios.delete(`${API_URL}/api/admin/user/${id}`, { withCredentials: true });
+            await api.delete(`/api/admin/user/${id}`);
             toast.success('User Deleted');
             fetchData();
         } catch (error) {

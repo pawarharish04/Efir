@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { Search, Filter, Clock, CheckCircle, XCircle, AlertCircle, Download, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 import { toast } from 'react-hot-toast';
 import StatusTimeline from './StatusTimeline';
 import { generateFIRPDF } from '../utils/pdfGenerator';
-import { API_URL } from '../config';
+
 
 const FIRList = () => {
     const [firs, setFirs] = useState([]);
@@ -19,9 +19,7 @@ const FIRList = () => {
     useEffect(() => {
         const fetchFIRs = async () => {
             try {
-                const res = await axios.get(`${API_URL}/api/firs/my-firs`, {
-                    withCredentials: true,
-                });
+                const res = await api.get('/api/firs/my-firs');
                 setFirs(res.data.firs);
             } catch (error) {
                 console.error('Error fetching FIRs:', error);
@@ -88,9 +86,7 @@ const FIRList = () => {
 
     const handleAddMessage = async (id, message) => {
         try {
-            const res = await axios.post(`${API_URL}/api/firs/update/${id}/message`, { message }, {
-                withCredentials: true
-            });
+            const res = await api.post(`/api/firs/update/${id}/message`, { message });
 
             setFirs(prev => prev.map(fir => {
                 if (fir._id === id) {
