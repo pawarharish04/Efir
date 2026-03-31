@@ -8,25 +8,28 @@ const connectDB = require("./config/db");
 const app = express();
 const server = http.createServer(app);
 
+/* ================= CORS OPTIONS ================= */
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : "http://localhost:5173",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Enable pre-flight across-the-board
+
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(cookieParser());
+
 app.get("/", (req, res) => {
   res.send("🚀 e-FIR Backend is running successfully");
 });
-app.use(
-  cors({
-    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : "http://localhost:5173",
-    credentials: true,
-  })
-);
 
 /* ================= SOCKET.IO ================= */
 const io = require("socket.io")(server, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : "http://localhost:5173",
-    methods: ["GET", "POST"]
-  },
+  cors: corsOptions,
 });
 
 io.on("connection", (socket) => {
