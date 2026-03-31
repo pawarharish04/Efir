@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
 });
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : "http://localhost:5173",
     credentials: true,
   })
 );
@@ -24,7 +24,8 @@ app.use(
 /* ================= SOCKET.IO ================= */
 const io = require("socket.io")(server, {
   cors: {
-    origin: "*",
+    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : "http://localhost:5173",
+    methods: ["GET", "POST"]
   },
 });
 
