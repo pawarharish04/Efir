@@ -11,7 +11,9 @@ const server = http.createServer(app);
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(cookieParser());
-
+app.get("/", (req, res) => {
+  res.send("🚀 e-FIR Backend is running successfully");
+});
 app.use(
   cors({
     origin: "*",
