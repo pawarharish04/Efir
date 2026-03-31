@@ -32,6 +32,10 @@ export const AuthProvider = ({ children }) => {
             const res = await api.post('/auth/login', payload);
             setUser(res.data.user);
             localStorage.setItem('user', JSON.stringify(res.data.user));
+            // Store token for Authorization header (reliable cross-origin auth)
+            if (res.data.token) {
+                localStorage.setItem('token', res.data.token);
+            }
             toast.success('Logged in successfully');
             return res.data.user;
         } catch (error) {
@@ -55,6 +59,7 @@ export const AuthProvider = ({ children }) => {
             await api.post('/auth/logout');
             setUser(null);
             localStorage.removeItem('user');
+            localStorage.removeItem('token');
             toast.success('Logged out');
         } catch (error) {
             console.error(error);
