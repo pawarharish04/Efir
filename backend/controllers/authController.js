@@ -62,11 +62,13 @@ const login = async (req, res, next) => {
             expiresIn: '1d',
         });
 
+        const isProduction = process.env.NODE_ENV === 'production';
+
         res
             .cookie('access_token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production", // must be true for cross-site
-                sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+                secure: isProduction, // must be true for sameSite: none
+                sameSite: isProduction ? 'none' : 'lax', // Use 'none' for cross-site in production
                 maxAge: 24 * 60 * 60 * 1000, // 1 day
             })
             .status(200)
@@ -87,7 +89,12 @@ const login = async (req, res, next) => {
 };
 
 const logout = (req, res) => {
-    res.clearCookie('access_token').status(200).json({ success: true, message: 'Logged out successfully' });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('access_token', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
+    }).status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
 module.exports = { register, login, logout };
