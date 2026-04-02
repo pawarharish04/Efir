@@ -51,9 +51,55 @@ io.on("connection", (socket) => {
 connectDB();
 
 /* ================= ROUTES ================= */
-app.use("/auth", require("./routes/authRoutes"));
-app.use("/api/firs", require("./routes/firRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
+try {
+  app.use("/auth", require("./routes/authRoutes"));
+  console.log("✅ Auth routes loaded");
+} catch (err) {
+  console.error("❌ Failed to load auth routes:", err.message);
+}
+
+try {
+  app.use("/api/firs", require("./routes/firRoutes"));
+  console.log("✅ FIR routes loaded");
+} catch (err) {
+  console.error("❌ Failed to load FIR routes:", err.message);
+}
+
+try {
+  app.use("/api/admin", require("./routes/adminRoutes"));
+  console.log("✅ Admin routes loaded");
+} catch (err) {
+  console.error("❌ Failed to load admin routes:", err.message);
+}
+
+// Debug route to verify registered routes
+app.get("/debug/routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({ method: Object.keys(middleware.route.methods), path: middleware.route.path });
+    } else if (middleware.name === "router") {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            method: Object.keys(handler.route.methods),
+            path: middleware.regexp.source.includes("auth") ? `/auth${handler.route.path}` :
+              middleware.regexp.source.includes("firs") ? `/api/firs${handler.route.path}` :
+                middleware.regexp.source.includes("admin") ? `/api/admin${handler.route.path}` :
+                  handler.route.path
+          });
+        }
+      });
+    }
+  });
+  res.json({ totalRoutes: routes.length, routes });
+});
+
+// Catch-all 404 handler (MUST be after all routes)
+app.use((req, res) => {
+  console.log(`⚠️ 404 hit: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
+});
 
 /* ================= START ================= */
 const PORT = process.env.PORT || 5000;
