@@ -18,4 +18,28 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Retry logic for Render cold starts (free tier returns 404 while spinning up)
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const config = error.config;
+
+        // Only retry on 404 or network errors (cold start indicators), max 2 retries
+        if (
+            (error.response?.status === 404 || !error.response) &&
+            (!config._retryCount || config._retryCount < 2)
+        ) {
+            config._retryCount = (config._retryCount || 0) + 1;
+            console.log(`Retrying request (${config._retryCount}/2): ${config.url}`);
+
+            // Wait 3 seconds for Render to wake up
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            return api(config);
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 export default api;
+
