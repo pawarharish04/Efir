@@ -5,8 +5,9 @@ node_modules/
 .env
 
 # Build outputs
-dist/
+# dist/ - frontend/dist is now tracked for Vercel
 build/
+!frontend/dist/
 
 # Uploads
 uploads/
