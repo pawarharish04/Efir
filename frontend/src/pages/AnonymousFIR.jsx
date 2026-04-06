@@ -39,9 +39,7 @@ const AnonymousFIR = () => {
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             files.forEach(file => data.append('evidence', file));
 
-            const res = await api.post('/api/firs/anonymous/create', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const res = await api.post('/api/firs/anonymous/create', data);
 
             setSubmittedId(res.data.trackingId);
             toast.success('Anonymous Report Submitted!');

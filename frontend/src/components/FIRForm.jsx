@@ -55,9 +55,7 @@ const FIRForm = ({ onSuccess }) => {
                 data.append('evidence', file);
             });
 
-            await api.post(`/api/firs/create`, data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await api.post(`/api/firs/create`, data);
 
             toast.success('FIR Submitted Successfully!');
 
