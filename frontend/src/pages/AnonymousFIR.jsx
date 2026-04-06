@@ -69,7 +69,7 @@ const AnonymousFIR = () => {
                         <p className="text-xs text-gray-500 mt-2">Save this ID to check your case status later.</p>
                     </div>
 
-                    <Link to="/login" className="block w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 transition">
+                    <Link to="/" className="block w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 transition">
                         Back to Home
                     </Link>
                 </div>

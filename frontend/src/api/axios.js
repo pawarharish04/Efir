@@ -37,6 +37,16 @@ api.interceptors.response.use(
             return api(config);
         }
 
+        // Handle 401 Unauthorized globally (session expired)
+        if (error.response?.status === 401) {
+            console.warn("Unauthorized: Clearing session and redirecting to login...");
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+
         return Promise.reject(error);
     }
 );
