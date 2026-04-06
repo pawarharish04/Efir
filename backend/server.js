@@ -101,6 +101,17 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Global Error Caught:", err);
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
+
 /* ================= START ================= */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

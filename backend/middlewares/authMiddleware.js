@@ -26,12 +26,12 @@ const verifyJWT = async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ success: false, message: 'Unauthorized: User no longer exists' });
         }
-
-        next();
     } catch (error) {
         console.error('JWT Verification Error:', error.message);
         return res.status(401).json({ success: false, message: 'Unauthorized: Invalid or expired token' });
     }
+
+    next(); // Only proceed to the next middleware if no errors were thrown in the try block
 };
 
 const authorizeRoles = (...roles) => {
