@@ -82,7 +82,18 @@ const firSchema = new mongoose.Schema({
         message: { type: String, required: true },
         role: { type: String, enum: ['officer', 'citizen', 'admin'] },
         timestamp: { type: Date, default: Date.now }
-    }]
+    }],
+    // Jurisdiction routing
+    station: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Station',
+        default: null,
+    },
+    // Flag for FIRs that could not be auto-routed to any station
+    stationUnmatched: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('FIR', firSchema);

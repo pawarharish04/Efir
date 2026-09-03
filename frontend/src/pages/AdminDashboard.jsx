@@ -12,12 +12,22 @@ const AdminDashboard = () => {
     const fetchData = async () => {
         try {
 
-            const [statsRes, officersRes] = await Promise.all([
+            const [statsRes, officersRes, workloadRes] = await Promise.all([
                 api.get('/api/admin/stats'),
-                api.get('/api/admin/officers')
+                api.get('/api/admin/officers'),
+                api.get('/api/admin/officer-workload').catch(() => ({ data: { officers: [] } }))
             ]);
             setStats(statsRes.data.stats);
-            setOfficers(officersRes.data.officers);
+
+            const workloadMap = {};
+            (workloadRes.data.officers || []).forEach(o => {
+                workloadMap[o._id] = o.openCasesCount;
+            });
+            const mergedOfficers = officersRes.data.officers.map(o => ({
+                ...o,
+                openCasesCount: workloadMap[o._id] || 0
+            }));
+            setOfficers(mergedOfficers);
         } catch (error) {
             toast.error('Failed to load admin data');
         } finally {
@@ -99,7 +109,9 @@ const AdminDashboard = () => {
                                 <tr>
                                     <th className="px-6 py-3">Name</th>
                                     <th className="px-6 py-3">Email</th>
+                                    <th className="px-6 py-3">Role</th>
                                     <th className="px-6 py-3">Department</th>
+                                    <th className="px-6 py-3">Workload</th>
                                     <th className="px-6 py-3">Status</th>
                                     <th className="px-6 py-3 text-right">Actions</th>
                                 </tr>
@@ -107,9 +119,32 @@ const AdminDashboard = () => {
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {officers.map(officer => (
                                     <tr key={officer._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{officer.name}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                            {officer.name}
+                                            {officer.badgeId && <span className="block text-[10px] text-gray-400">Badge: #{officer.badgeId}</span>}
+                                        </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-sm">{officer.email}</td>
+                                        <td className="px-6 py-4">
+                                            {officer.designation === 'supervisor' ? (
+                                                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                    Supervisor
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                                    Officer
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-sm">{officer.department || 'N/A'}</td>
+                                        <td className="px-6 py-4">
+                                            {officer.isApproved ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                                    {officer.openCasesCount || 0} active cases
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">N/A</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4">
                                             {officer.isApproved ? (
                                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
@@ -143,7 +178,7 @@ const AdminDashboard = () => {
                                 ))}
                                 {officers.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No officers found.</td>
+                                        <td colSpan="7" className="px-6 py-8 text-center text-gray-500">No officers found.</td>
                                     </tr>
                                 )}
                             </tbody>

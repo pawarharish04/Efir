@@ -60,4 +60,37 @@ const sendStatusUpdateEmail = async (userEmail, userName, firId, newStatus) => {
     }
 };
 
-module.exports = { sendStatusUpdateEmail };
+const sendOfficerAssignmentEmail = async (officerEmail, officerName, firId, assignedByName) => {
+    try {
+        const transporter = await createTransporter();
+
+        const info = await transporter.sendMail({
+            from: '"E-FIR Dispatch System" <dispatch@efir-system.gov>',
+            to: officerEmail,
+            subject: `New Case Assigned: FIR #${firId.slice(-6).toUpperCase()}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #1a73e8;">New Case Assignment</h2>
+                    <p>Dear Officer ${officerName},</p>
+                    <p>A new FIR case has been officially assigned to you by <strong>${assignedByName}</strong>.</p>
+                    
+                    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 0;">Case Reference ID:</p>
+                        <h3 style="margin: 5px 0; color: #1a73e8;">#${firId.slice(-6).toUpperCase()}</h3>
+                    </div>
+
+                    <p>Please login to the Officer Portal to review evidence, update case progress, and maintain the investigation diary.</p>
+                    <br>
+                    <p style="color: #666; font-size: 12px;">This is an automated dispatch notification.</p>
+                </div>
+            `,
+        });
+
+        console.log("📨 Assignment email sent: %s", info.messageId);
+        console.log("🔗 Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    } catch (error) {
+        console.error("Error sending assignment email:", error);
+    }
+};
+
+module.exports = { sendStatusUpdateEmail, sendOfficerAssignmentEmail };

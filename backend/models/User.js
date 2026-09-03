@@ -35,6 +35,16 @@ const userSchema = new mongoose.Schema({
     },
     department: {
         type: String, // e.g., "Cyber Cell", "Traffic"
+    },
+    designation: {
+        type: String,
+        enum: ['officer', 'supervisor'],
+        default: 'officer',
+    },
+    station: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Station',
+        default: null,
     }
 }, { timestamps: true });
 

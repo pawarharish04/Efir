@@ -58,7 +58,7 @@ const login = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Account pending admin approval.' });
         }
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+        const token = jwt.sign({ id: user._id, role: user.role, designation: user.designation || 'officer' }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
 
@@ -80,7 +80,8 @@ const login = async (req, res, next) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    badgeId: user.badgeId
+                    badgeId: user.badgeId,
+                    designation: user.designation || 'officer'
                 },
             });
     } catch (error) {

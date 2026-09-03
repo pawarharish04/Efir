@@ -1,5 +1,5 @@
 const express = require('express');
-const { createFIR, createAnonymousFIR, getUserFIRs, getAnonymousFIRStatus, getAllFIRs, updateFIRStatus, getAnalytics, addInvestigationLog, addMessage } = require('../controllers/firController');
+const { createFIR, createAnonymousFIR, getUserFIRs, getAnonymousFIRStatus, getAllFIRs, updateFIRStatus, getAnalytics, addInvestigationLog, addMessage, assignFIR } = require('../controllers/firController');
 const { verifyJWT, authorizeRoles } = require('../middlewares/authMiddleware');
 const { upload, verifyMagicBytes } = require('../middlewares/uploadMiddleware');
 const rateLimit = require('../middlewares/rateLimiter');
@@ -23,6 +23,9 @@ router.get('/my-firs', verifyJWT, getUserFIRs);
 
 // Shared Routes (Citizen & Officer) - Communication
 router.post('/update/:id/message', verifyJWT, addMessage);
+
+// Task Assignment (Supervisor or Admin)
+router.put('/assign/:id', verifyJWT, assignFIR);
 
 // Officer/Admin routes
 router.get('/all', verifyJWT, authorizeRoles('officer', 'admin'), getAllFIRs);
