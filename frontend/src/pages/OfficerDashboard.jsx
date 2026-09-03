@@ -647,8 +647,9 @@ const OfficerDashboard = () => {
                                                 )}
                                             </AnimatePresence>
                                         </Fragment>
-                                    ))
-                                )}
+                                    );
+                                })
+                            )}
                             </tbody>
                         </table>
                     </div>
