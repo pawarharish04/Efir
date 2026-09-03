@@ -1,6 +1,8 @@
 const FIR = require('../models/FIR');
 const { sendStatusUpdateEmail } = require('../utils/emailService');
+const { cleanupFiles } = require('../middlewares/uploadMiddleware');
 const crypto = require('crypto');
+const path = require('path');
 
 const createFIR = async (req, res, next) => {
     try {
@@ -18,10 +20,10 @@ const createFIR = async (req, res, next) => {
             longitude,
         } = req.body;
 
-        // Handle File Uploads
+        // Handle File Uploads with normalized relative web paths
         let evidencePaths = [];
         if (req.files && req.files.length > 0) {
-            evidencePaths = req.files.map(file => file.path);
+            evidencePaths = req.files.map(file => 'uploads/' + path.basename(file.filename || file.path));
         }
 
         const newFIR = new FIR({
@@ -51,6 +53,10 @@ const createFIR = async (req, res, next) => {
 
         res.status(201).json({ success: true, message: 'FIR submitted successfully', fir: newFIR });
     } catch (error) {
+        // Clean up uploaded files if FIR creation fails
+        if (req.files && req.files.length > 0) {
+            cleanupFiles(req.files);
+        }
         next(error);
     }
 };
@@ -71,10 +77,10 @@ const createAnonymousFIR = async (req, res, next) => {
             longitude,
         } = req.body;
 
-        // Handle File Uploads
+        // Handle File Uploads with normalized relative web paths
         let evidencePaths = [];
         if (req.files && req.files.length > 0) {
-            evidencePaths = req.files.map(file => file.path);
+            evidencePaths = req.files.map(file => 'uploads/' + path.basename(file.filename || file.path));
         }
 
         // Generate a random Reference ID for tracking
@@ -110,6 +116,10 @@ const createAnonymousFIR = async (req, res, next) => {
             trackingId: anonymousRefId
         });
     } catch (error) {
+        // Clean up uploaded files if anonymous submission fails
+        if (req.files && req.files.length > 0) {
+            cleanupFiles(req.files);
+        }
         next(error);
     }
 };
@@ -266,24 +276,34 @@ const addMessage = async (req, res, next) => {
         const { id } = req.params;
         const { message } = req.body;
 
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ success: false, message: 'Message content is required' });
+        }
+
+        const fir = await FIR.findById(id);
+        if (!fir) {
+            return res.status(404).json({ success: false, message: 'FIR not found' });
+        }
+
+        // Ownership Verification: Must be complainant, assigned officer, or admin
+        const isComplainant = fir.complainant && fir.complainant.toString() === req.user._id.toString();
+        const isOfficerOrAdmin = ['officer', 'admin'].includes(req.user.role);
+
+        if (!isComplainant && !isOfficerOrAdmin) {
+            return res.status(403).json({ success: false, message: 'Access denied: You are not authorized to post messages on this FIR' });
+        }
+
         const newMessage = {
             senderModel: 'User',
             sender: req.user._id, // User ID (Officer or Citizen)
             senderName: req.user.name,
             role: req.user.role,
-            message,
+            message: message.trim(),
             timestamp: new Date()
         };
 
-        const fir = await FIR.findByIdAndUpdate(
-            id,
-            { $push: { messages: newMessage } },
-            { new: true }
-        ).populate('complainant');
-
-        if (!fir) {
-            return res.status(404).json({ success: false, message: 'FIR not found' });
-        }
+        fir.messages.push(newMessage);
+        await fir.save();
 
         // Notify via socket if applicable
         if (req.io) {

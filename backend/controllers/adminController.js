@@ -31,12 +31,30 @@ const approveOfficer = async (req, res, next) => {
     }
 };
 
-// Delete a user (officer or citizen)
+const path = require('path');
+const { cleanupFiles } = require('../middlewares/uploadMiddleware');
+
+// Delete a user (officer or citizen) and clean up associated files
 const deleteUser = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Clean up evidence files from disk for all FIRs filed by this user
+        const userFIRs = await FIR.find({ complainant: id });
+        for (const fir of userFIRs) {
+            if (fir.evidence && fir.evidence.length > 0) {
+                const fullPaths = fir.evidence.map(relPath => path.join(__dirname, '../', relPath));
+                cleanupFiles(fullPaths);
+            }
+        }
+        await FIR.deleteMany({ complainant: id });
         await User.findByIdAndDelete(id);
-        res.status(200).json({ success: true, message: 'User deleted successfully' });
+
+        res.status(200).json({ success: true, message: 'User and associated files deleted successfully' });
     } catch (error) {
         next(error);
     }

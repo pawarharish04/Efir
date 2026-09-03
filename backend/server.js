@@ -3,6 +3,7 @@ require("dotenv").config();
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const http = require("http");
+const path = require("path");
 const connectDB = require("./config/db");
 
 const app = express();
@@ -33,6 +34,7 @@ app.options("*", cors(corsOptions)); // Enable pre-flight across-the-board
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get("/", (req, res) => {
   res.send("🚀 e-FIR Backend is running successfully");
