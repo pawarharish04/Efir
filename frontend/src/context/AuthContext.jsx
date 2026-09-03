@@ -1,8 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-
+﻿import { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import api from "../api/axios";
-
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -10,13 +8,6 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // const api = axios.create({
-    //     baseURL: import.meta.env.VITE_API_URL,
-    //     withCredentials: true,
-    // });
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -34,26 +25,31 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password, badgeId = null) => {
         try {
-            const payload = badgeId ? { badgeId, password } : { email, password };
+            const payload = {
+                identifier: (badgeId || email || '').trim(),
+                badgeId: badgeId ? badgeId.trim() : undefined,
+                email: email ? email.trim() : undefined,
+                password
+            };
             const res = await api.post('/auth/login', payload);
             setUser(res.data.user);
             localStorage.setItem('user', JSON.stringify(res.data.user));
-            // Store token for Authorization header (reliable cross-origin auth)
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
             }
-            toast.success('Logged in successfully');
+            toast.success(`Welcome, ${res.data.user.name}`);
             return res.data.user;
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Login failed');
+            toast.error(error.response?.data?.message || 'Authentication failed');
             throw error;
         }
     };
 
     const register = async (userData) => {
         try {
-            await api.post('/auth/register', userData);
-            toast.success('Registration successful! Please login.');
+            const res = await api.post('/auth/register', userData);
+            toast.success(res.data.message || 'Registration successful! Please login.');
+            return res.data;
         } catch (error) {
             toast.error(error.response?.data?.message || 'Registration failed');
             throw error;
@@ -63,12 +59,13 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             await api.post('/auth/logout');
+        } catch (error) {
+            console.error(error);
+        } finally {
             setUser(null);
             localStorage.removeItem('user');
             localStorage.removeItem('token');
-            toast.success('Logged out');
-        } catch (error) {
-            console.error(error);
+            toast.success('Logged out securely');
         }
     };
 

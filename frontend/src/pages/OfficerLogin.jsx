@@ -1,113 +1,181 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Lock, Shield, ArrowRight, BadgeCheck } from 'lucide-react';
+import { Lock, Shield, BadgeCheck, Mail, AlertCircle, CheckCircle2, Radio, KeyRound } from 'lucide-react';
+import { getRoleDashboardPath } from '../App';
 
 const OfficerLogin = () => {
+    const [loginMode, setLoginMode] = useState('badge'); // 'badge' or 'email'
     const [badgeId, setBadgeId] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMsg('');
         setIsLoading(true);
+
         try {
-            // Pass badgeId instead of email
-            const user = await login(null, password, badgeId);
-            if (user.role === 'officer' || user.role === 'admin') {
-                navigate('/officer-dashboard');
-            } else {
-                // Should not happen if backend logic is correct, but safe fallback
-                navigate('/');
-            }
+            const user = loginMode === 'badge'
+                ? await login(null, password, badgeId.trim())
+                : await login(email.trim(), password, null);
+
+            navigate(getRoleDashboardPath(user.role), { replace: true });
         } catch (error) {
-            // Error handled in context
+            setErrorMsg(error.response?.data?.message || 'Authentication failed. Please verify credentials.');
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 z-0 opacity-10">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-            </div>
+        <div className="min-h-[88vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans bg-slate-950 text-slate-100">
+            <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
+                {/* Tactical Top Accent Light */}
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-blue-500 to-indigo-500"></div>
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full space-y-8 bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 z-10"
-            >
-                <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-blue-900/50 rounded-full flex items-center justify-center mb-4 border border-blue-500/30">
-                        <Shield className="h-8 w-8 text-blue-400" />
+                {/* Header */}
+                <div className="text-center space-y-2 pt-2">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-blue-600/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto shadow-lg">
+                        <Shield className="h-7 w-7 text-amber-300" />
                     </div>
-                    <h2 className="text-3xl font-extrabold text-white tracking-tight">
-                        Officer Portal
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Authorized Personnel Only
-                    </p>
+                    <div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-950/80 text-amber-400 border border-amber-700/60 font-mono text-[10px] font-bold tracking-widest uppercase mb-1">
+                            <Radio className="w-3 h-3 text-red-500 animate-pulse" />
+                            POLICE DISPATCH TERMINAL
+                        </div>
+                        <h2 className="text-2xl font-black text-white tracking-tight">
+                            Officer Clearance Console
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-1">
+                            Law Enforcement Personnel & Case Investigation Desk
+                        </p>
+                    </div>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm space-y-4">
-                        <div className="relative group">
-                            <BadgeCheck className="absolute top-3 left-3 h-5 w-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-                            <input
-                                id="badge-id"
-                                name="badgeId"
-                                type="text"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-10 py-3 border border-gray-600 bg-gray-700/50 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                placeholder="Badge ID"
-                                value={badgeId}
-                                onChange={(e) => setBadgeId(e.target.value)}
-                            />
+                {/* Dual Mode Switcher: Badge ID vs Registered Email */}
+                <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs font-bold">
+                    <button
+                        type="button"
+                        onClick={() => { setLoginMode('badge'); setErrorMsg(''); }}
+                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                            loginMode === 'badge'
+                                ? 'bg-amber-600 text-white shadow-md'
+                                : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        <BadgeCheck className="w-4 h-4" />
+                        <span>Police Badge ID</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setLoginMode('email'); setErrorMsg(''); }}
+                        className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+                            loginMode === 'email'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        <Mail className="w-4 h-4" />
+                        <span>Official Email</span>
+                    </button>
+                </div>
+
+                {/* Error Banner */}
+                {errorMsg && (
+                    <div className="p-3 bg-red-950/80 border border-red-800 rounded-xl text-xs text-red-300 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        <span>{errorMsg}</span>
+                    </div>
+                )}
+
+                {/* Login Form */}
+                <form className="space-y-4 text-xs" onSubmit={handleSubmit}>
+                    {loginMode === 'badge' ? (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex justify-between">
+                                <span>Official Police Badge ID</span>
+                                <span className="text-[10px] text-amber-400 font-mono">e.g. MH-POL-1001</span>
+                            </label>
+                            <div className="relative">
+                                <BadgeCheck className="absolute top-3 left-3 h-4 w-4 text-amber-400" />
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-700 bg-slate-950 rounded-xl focus:border-amber-500 focus:outline-none text-white font-mono uppercase tracking-wider"
+                                    placeholder="Enter Badge Number"
+                                    value={badgeId}
+                                    onChange={(e) => setBadgeId(e.target.value.toUpperCase())}
+                                />
+                            </div>
                         </div>
-                        <div className="relative group">
-                            <Lock className="absolute top-3 left-3 h-5 w-5 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
+                    ) : (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex justify-between">
+                                <span>Official Police Email</span>
+                                <span className="text-[10px] text-blue-400 font-mono">Registered ID</span>
+                            </label>
+                            <div className="relative">
+                                <Mail className="absolute top-3 left-3 h-4 w-4 text-blue-400" />
+                                <input
+                                    type="email"
+                                    required
+                                    className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-700 bg-slate-950 rounded-xl focus:border-blue-500 focus:outline-none text-white"
+                                    placeholder="officer@police.gov.in"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                            Passkey Credentials
+                        </label>
+                        <div className="relative">
+                            <Lock className="absolute top-3 left-3 h-4 w-4 text-slate-500" />
                             <input
-                                id="password"
-                                name="password"
                                 type="password"
                                 required
-                                className="appearance-none rounded-lg relative block w-full px-10 py-3 border border-gray-600 bg-gray-700/50 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                placeholder="Password"
+                                className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-700 bg-slate-950 rounded-xl focus:border-amber-500 focus:outline-none text-white"
+                                placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 transition-all shadow-lg hover:shadow-blue-500/30"
-                        >
-                            <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                                {isLoading ? (
-                                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                                ) : (
-                                    <ArrowRight className="h-5 w-5 text-blue-300 group-hover:text-white transition-colors" />
-                                )}
-                            </span>
-                            {isLoading ? 'Verifying Credentials...' : 'Secure Login'}
-                        </button>
-                    </div>
-
-                    <div className="text-center mt-4">
-                        <Link to="/login" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-                            Return to Citizen Login
-                        </Link>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-3.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 disabled:opacity-50 transition-all uppercase font-mono tracking-wider shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <KeyRound className="w-4 h-4" />
+                        <span>{isLoading ? 'Verifying Credentials...' : 'Authenticate Officer Terminal'}</span>
+                    </button>
                 </form>
-            </motion.div>
+
+                {/* Quick Officer Demo/Helper Bar */}
+                <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-xl text-[11px] space-y-1">
+                    <span className="font-bold text-slate-300 block">Registered Officer Credentials:</span>
+                    <div className="flex justify-between text-slate-400 font-mono">
+                        <span>Badge: <strong className="text-amber-300">MH-POL-1001</strong></span>
+                        <span>or Email: <strong className="text-blue-300">pawarharish899@gmail.com</strong></span>
+                    </div>
+                </div>
+
+                {/* Return to Citizen portal */}
+                <div className="pt-2 border-t border-slate-800 text-center text-xs">
+                    <Link to="/login" className="text-slate-400 hover:text-white transition-colors font-mono">
+                        &larr; Return to Public Citizen Portal
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 };
