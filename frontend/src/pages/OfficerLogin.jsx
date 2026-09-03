@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Shield, BadgeCheck, Mail, AlertCircle, CheckCircle2, Radio, KeyRound } from 'lucide-react';
@@ -160,13 +160,12 @@ const OfficerLogin = () => {
                     </button>
                 </form>
 
-                {/* Quick Officer Demo/Helper Bar */}
-                <div className="p-3.5 bg-slate-950/90 border border-slate-800 rounded-xl text-[11px] space-y-1">
-                    <span className="font-bold text-slate-300 block">Registered Officer Credentials:</span>
-                    <div className="flex justify-between text-slate-400 font-mono">
-                        <span>Badge: <strong className="text-amber-300">MH-POL-1001</strong></span>
-                        <span>or Email: <strong className="text-blue-300">pawarharish899@gmail.com</strong></span>
-                    </div>
+                {/* Officer Clearance Notice */}
+                <div className="p-3 bg-slate-950/90 border border-slate-800 rounded-xl text-[11px] space-y-1">
+                    <span className="font-bold text-slate-400 block">Law Enforcement Verification Notice:</span>
+                    <p className="text-slate-500 text-[10px]">
+                        Officer access is strictly restricted to verified personnel with an active territorial Police Badge ID or official department email.
+                    </p>
                 </div>
 
                 {/* Return to Citizen portal */}
