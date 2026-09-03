@@ -4,6 +4,7 @@ const Station = require('../models/Station');
 const { matchStation } = require('../utils/stationMatcher');
 const { sendStatusUpdateEmail, sendOfficerAssignmentEmail } = require('../utils/emailService');
 const { cleanupFiles } = require('../middlewares/uploadMiddleware');
+const { recordAuditLog } = require('../utils/auditLogger');
 const crypto = require('crypto');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -241,6 +242,16 @@ const updateFIRStatus = async (req, res, next) => {
             );
         }
 
+        // Immutable Audit Log
+        await recordAuditLog({
+            req,
+            firId: fir._id,
+            action: 'UPDATE_STATUS',
+            resourceType: 'FIR_RECORD',
+            resourceTarget: `Status changed to ${status}`,
+            metadata: { previousStatus: fir.status, newStatus: status }
+        });
+
         res.status(200).json({ success: true, message: 'FIR status updated', fir: populatedFIR });
     } catch (error) {
         next(error);
@@ -319,6 +330,16 @@ const addInvestigationLog = async (req, res, next) => {
 
         fir.investigationLogs.push(newLog);
         await fir.save();
+
+        // Immutable Audit Log
+        await recordAuditLog({
+            req,
+            firId: fir._id,
+            action: 'ADD_DIARY_LOG',
+            resourceType: 'CASE_DIARY',
+            resourceTarget: entry.trim().substring(0, 80),
+            metadata: { entrySummary: entry.trim().substring(0, 150) }
+        });
 
         res.status(200).json({ success: true, message: 'Log added', log: newLog });
     } catch (error) {
@@ -438,11 +459,75 @@ const assignFIR = async (req, res, next) => {
             );
         }
 
+        // Immutable Audit Log
+        await recordAuditLog({
+            req,
+            firId: fir._id,
+            action: 'ASSIGN_OFFICER',
+            resourceType: 'FIR_RECORD',
+            resourceTarget: `Assigned to ${targetOfficer.name} (Badge: ${targetOfficer.badgeId || 'N/A'})`,
+            metadata: { assignedOfficerId: targetOfficer._id, assignedOfficerName: targetOfficer.name }
+        });
+
         res.status(200).json({
             success: true,
             message: `FIR successfully assigned to Officer ${targetOfficer.name}`,
             fir: populatedFIR
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Custom audit endpoint to log file views, PDF downloads, and evidence accesses
+ */
+const logAuditAction = async (req, res, next) => {
+    try {
+        const { firId, action, resourceType, resourceTarget, metadata } = req.body;
+
+        if (!firId || !action) {
+            return res.status(400).json({ success: false, message: 'firId and action are required' });
+        }
+
+        const fir = await FIR.findById(firId);
+        if (!fir) {
+            return res.status(404).json({ success: false, message: 'FIR not found' });
+        }
+
+        const log = await recordAuditLog({
+            req,
+            firId,
+            action,
+            resourceType: resourceType || 'FIR_RECORD',
+            resourceTarget: resourceTarget || '',
+            metadata: metadata || {}
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Audit event recorded immutably',
+            logId: log?._id,
+            recordHash: log?.recordHash
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Retrieve immutable audit logs for a specific FIR
+ */
+const getFIRAuditLogs = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const AuditLog = require('../models/AuditLog');
+
+        const logs = await AuditLog.find({ firId: id })
+            .sort({ timestamp: -1 })
+            .limit(100);
+
+        res.status(200).json({ success: true, logs });
     } catch (error) {
         next(error);
     }
@@ -458,5 +543,7 @@ module.exports = {
     getAnalytics,
     addInvestigationLog,
     addMessage,
-    assignFIR
+    assignFIR,
+    logAuditAction,
+    getFIRAuditLogs
 };

@@ -1,5 +1,9 @@
 const express = require('express');
-const { createFIR, createAnonymousFIR, getUserFIRs, getAnonymousFIRStatus, getAllFIRs, updateFIRStatus, getAnalytics, addInvestigationLog, addMessage, assignFIR } = require('../controllers/firController');
+const {
+    createFIR, createAnonymousFIR, getUserFIRs, getAnonymousFIRStatus,
+    getAllFIRs, updateFIRStatus, getAnalytics, addInvestigationLog,
+    addMessage, assignFIR, logAuditAction, getFIRAuditLogs
+} = require('../controllers/firController');
 const { verifyJWT, authorizeRoles } = require('../middlewares/authMiddleware');
 const { upload, verifyMagicBytes } = require('../middlewares/uploadMiddleware');
 const rateLimit = require('../middlewares/rateLimiter');
@@ -26,6 +30,10 @@ router.post('/update/:id/message', verifyJWT, addMessage);
 
 // Task Assignment (Supervisor or Admin)
 router.put('/assign/:id', verifyJWT, assignFIR);
+
+// Immutable Audit Trail (View/Download/Access Tracking)
+router.post('/audit/log', verifyJWT, logAuditAction);
+router.get('/audit/:id', verifyJWT, authorizeRoles('officer', 'admin'), getFIRAuditLogs);
 
 // Officer/Admin routes
 router.get('/all', verifyJWT, authorizeRoles('officer', 'admin'), getAllFIRs);

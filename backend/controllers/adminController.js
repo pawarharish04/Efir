@@ -65,10 +65,12 @@ const deleteUser = async (req, res, next) => {
 // Get Admin Stats
 const getAdminStats = async (req, res, next) => {
     try {
+        const AuditLog = require('../models/AuditLog');
         const totalCitizens = await User.countDocuments({ role: 'citizen' });
         const totalOfficers = await User.countDocuments({ role: 'officer' });
         const pendingOfficers = await User.countDocuments({ role: 'officer', isApproved: false });
         const totalFIRs = await FIR.countDocuments();
+        const totalAuditLogs = await AuditLog.countDocuments();
 
         res.status(200).json({
             success: true,
@@ -76,7 +78,8 @@ const getAdminStats = async (req, res, next) => {
                 citizens: totalCitizens,
                 officers: totalOfficers,
                 pendingOfficers,
-                firs: totalFIRs
+                firs: totalFIRs,
+                auditLogs: totalAuditLogs
             }
         });
     } catch (error) {
