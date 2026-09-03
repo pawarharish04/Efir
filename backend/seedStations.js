@@ -1,6 +1,7 @@
 ﻿/**
  * seedStations.js — Seeds 4 realistic Indian police stations.
- * Run: node backend/seedStations.js
+ * Run: node backend/seedStations.js   (from project root)
+ *      node seedStations.js           (from backend/ dir)
  */
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const mongoose = require('mongoose');
@@ -51,15 +52,26 @@ const seed = async () => {
         console.log('Connected to MongoDB');
 
         for (const data of STATIONS) {
+            // Build the full GeoJSON here so the 2dsphere index validation passes
+            // (findOneAndUpdate bypasses Mongoose pre-save hooks)
+            const doc = {
+                ...data,
+                location: {
+                    type: 'Point',
+                    coordinates: [data.longitude, data.latitude],
+                },
+                isActive: true,
+            };
+
             await Station.findOneAndUpdate(
                 { name: data.name },
-                { $set: data },
+                { $set: doc },
                 { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
             );
             console.log('  Upserted:', data.name, '(' + data.city + ')');
         }
 
-        console.log('Seeding complete: ' + STATIONS.length + ' stations.');
+        console.log('\nSeeding complete: ' + STATIONS.length + ' stations inserted/updated.');
     } catch (err) {
         console.error('Seeding failed:', err.message);
         process.exit(1);
