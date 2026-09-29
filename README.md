@@ -28,6 +28,224 @@ graph TD
 
 ---
 
+## 🧭 Detailed Runtime Architecture
+
+### System Context
+
+```mermaid
+flowchart LR
+  Browser["React/Vite SPA<br/>frontend/src"] -->|Axios REST + JWT/cookie| API["Express API<br/>backend/server.js"]
+  Browser -->|Socket.io client| Socket["Socket.io server"]
+  Socket --> API
+  API --> Mongoose["Mongoose ODM"]
+  Mongoose --> Mongo[(MongoDB)]
+  API --> Files["backend/uploads<br/>static evidence"]
+  API --> Email["Nodemailer"]
+```
+
+The backend is a single Node.js process that serves Express REST routes, static evidence files, and Socket.io over the same HTTP server. MongoDB is accessed through Mongoose. The frontend is a React SPA that uses Axios for REST calls and a shared Socket.io context for live updates.
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Auth as React AuthContext
+  participant Axios
+  participant API as Express
+  participant Controller as authController
+  participant DB as MongoDB
+
+  User->>Auth: Submit email or badge ID and password
+  Auth->>Axios: POST /auth/login
+  Axios->>API: Request with credentials enabled
+  API->>Controller: login()
+  Controller->>DB: Find User by email or badgeId
+  Controller->>Controller: bcrypt.compare(password)
+  Controller->>Controller: Check officer approval and sign JWT
+  Controller-->>API: access_token cookie + token JSON
+  API-->>Auth: user and token
+  Auth->>Auth: Store user and token in localStorage
+```
+
+Authentication is implemented by `backend/controllers/authController.js`, `backend/routes/authRoutes.js`, `frontend/src/context/AuthContext.jsx`, and `frontend/src/api/axios.js`.
+
+The client sends the JWT as `Authorization: Bearer <token>`. The server also accepts the HTTP-only `access_token` cookie. Tokens expire after one day. Logout clears the cookie and removes the client-side session state.
+
+### RBAC and Request Authorization
+
+```mermaid
+flowchart TD
+  Request["Protected request"] --> JWT["verifyJWT"]
+  JWT --> Token{"Bearer token or cookie?"}
+  Token -->|Missing or invalid| Unauthorized["401 Unauthorized"]
+  Token -->|Valid| UserLookup["Load User from MongoDB"]
+  UserLookup --> Guard{"Role, designation, and resource checks"}
+  Guard -->|Denied| Forbidden["403 Forbidden"]
+  Guard -->|Allowed| Controller["Route controller"]
+  Controller --> Database["MongoDB operation"]
+```
+
+| Resource | Authorization |
+| :--- | :--- |
+| `/auth/*` | Public |
+| Anonymous FIR create/track | Public; creation is rate-limited |
+| `/api/firs/create`, `/api/firs/my-firs` | Authenticated users |
+| `/api/firs/all`, status updates, investigation logs, analytics | `officer` or `admin` plus controller checks where applicable |
+| FIR assignment and officer workload | `admin` or `designation: supervisor` |
+| FIR audit retrieval | `officer` or `admin` |
+| Station listing | `admin` or `designation: supervisor` |
+| Remaining admin routes | `admin` only |
+
+The primary guards are in `backend/middlewares/authMiddleware.js`. The backend is the security boundary; frontend route guards only control navigation. FIR controllers additionally check complainant ownership, assigned officer identity, station scope, and supervisor/admin privileges.
+
+### Evidence Upload Flow
+
+```mermaid
+sequenceDiagram
+  participant Form as FIR form
+  participant Route as FIR route
+  participant Multer
+  participant Disk as backend/uploads
+  participant Validator as Magic-byte validator
+  participant Controller
+  participant DB as MongoDB
+
+  Form->>Route: multipart/form-data, field: evidence
+  Route->>Multer: upload.array("evidence", 5)
+  Multer->>Multer: Validate extension and MIME type
+  Multer->>Disk: Write file with generated filename
+  Multer->>Validator: Pass req.files
+  Validator->>Validator: Validate binary file signature
+  alt Invalid signature
+    Validator->>Disk: Delete all files from request
+    Validator-->>Form: 400 invalid or corrupt file
+  else Valid files
+    Validator->>Controller: Continue request
+    Controller->>DB: Save relative evidence paths on FIR
+    Controller-->>Form: FIR response
+  end
+```
+
+Uploads are handled by `backend/middlewares/uploadMiddleware.js`:
+
+* Maximum five files per request.
+* Maximum 10 MB per file.
+* Allowed types: JPG, JPEG, PNG, MP4, and PDF.
+* Validation uses extension, MIME type, and magic bytes.
+* Files are served through `/uploads/<filename>`.
+* Failed FIR creation triggers disk cleanup.
+
+### Socket.io Flow
+
+```mermaid
+sequenceDiagram
+  participant Client as React SocketContext
+  participant Server as Socket.io server
+  participant REST as FIR controller
+  participant Dashboards as Connected dashboards
+
+  Client->>Server: Connect to VITE_API_URL
+  Client->>Server: Listen for firCreated and firUpdated
+  REST->>Server: Emit FIR event after database change
+  Server-->>Dashboards: Broadcast event
+  Dashboards->>Dashboards: Update local FIR state
+```
+
+Current event names are `firCreated`, `firUpdated`, and `newMessage`. Client listeners exist in `OfficerDashboard.jsx` and `FIRList.jsx`.
+
+**Implementation note:** Controllers currently call `req.io.emit(...)`, but `server.js` does not attach `io` to requests. As a result, these guarded emits are currently skipped. Message delivery also targets a FIR room, but no room-join handler is currently implemented. To activate the designed flow, the server needs request-level `io` injection and a client/server room-join protocol.
+
+### FIR and Jurisdiction Flow
+
+```mermaid
+flowchart TD
+  Submit["Citizen or anonymous FIR submission"] --> Upload["Multer and magic-byte validation"]
+  Upload --> Match["matchStation()"]
+  Match --> Pincode{"Active station matches pincode?"}
+  Pincode -->|Yes| Assigned["Assign station"]
+  Pincode -->|No| GPS{"Valid GPS coordinates?"}
+  GPS -->|Yes| Nearby["2dsphere nearest-station query"]
+  Nearby --> Radius{"Within station radius?"}
+  Radius -->|Yes| Assigned
+  Radius -->|No| Unmatched["stationUnmatched = true"]
+  GPS -->|No| Unmatched
+  Assigned --> Save["Save FIR"]
+  Unmatched --> Save
+```
+
+Station matching is implemented in `backend/utils/stationMatcher.js`. It checks pincode first, then performs a geospatial query and Haversine radius check. Unmatched FIRs remain available for administrative rerouting.
+
+### MongoDB Schema
+
+```mermaid
+erDiagram
+  USER ||--o{ FIR : files
+  USER ||--o{ FIR : assigned_to
+  STATION ||--o{ USER : contains
+  STATION ||--o{ FIR : jurisdiction
+  FIR ||--o{ AUDIT_LOG : records
+  USER ||--o{ AUDIT_LOG : performs
+  FIR ||--o{ FIR_MESSAGE : embeds
+  FIR ||--o{ INVESTIGATION_LOG : embeds
+
+  USER {
+    ObjectId _id
+    string name
+    string email UK
+    string password
+    enum role
+    string badgeId
+    boolean isApproved
+    enum designation
+    ObjectId station FK
+  }
+
+  FIR {
+    ObjectId _id
+    ObjectId complainant FK_nullable
+    boolean isAnonymous
+    string anonymousRefId
+    enum incidentType
+    string description
+    string[] evidence
+    enum status
+    ObjectId assignedOfficer FK
+    ObjectId station FK_nullable
+    boolean stationUnmatched
+    FIR_MESSAGE messages
+    INVESTIGATION_LOG investigationLogs
+  }
+
+  STATION {
+    ObjectId _id
+    string name
+    string city
+    string state
+    string[] pincodes
+    number latitude
+    number longitude
+    Point location
+    number radiusKm
+    boolean isActive
+  }
+
+  AUDIT_LOG {
+    ObjectId _id
+    ObjectId firId FK
+    ObjectId userId FK
+    string action
+    string resourceType
+    string previousHash
+    string recordHash
+    date timestamp
+  }
+```
+
+The persistent models are `User`, `FIR`, `Station`, and `AuditLog`. FIR messages and investigation logs are embedded arrays rather than separate collections. Audit entries are intended to be append-only and use a SHA-256 hash chain with Mongoose update/delete guards.
+
+---
+
 ## 🚀 Core Features
 
 ### 1. 🛡️ Citizen Incident Lodgement & Whistleblower Portal
